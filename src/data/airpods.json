@@ -1,0 +1,113 @@
+{
+  "products": [
+    {
+      "model": "Airpods",
+      "productCode": null,
+      "variants": [
+        {
+          "color": "WHITE",
+          "colorCode": "WHITE",
+          "itemName": "Apple AirPods (3rd generation) - 2021",
+          "itemAlias": null,
+          "mrp": 18500,
+          "discount": 0.05,
+          "instantDiscount": 17575,
+          "cashBack": 1000,
+          "exchangeBonus": 0,
+          "exchangeValue": 0,
+          "effectivePrice": 16575
+        },
+        {
+          "color": "WHITE",
+          "colorCode": "WHITE",
+          "itemName": "AirPods with Charging Case",
+          "itemAlias": null,
+          "mrp": 14900,
+          "discount": 0.05,
+          "instantDiscount": 14155,
+          "cashBack": 1000,
+          "exchangeBonus": 0,
+          "exchangeValue": 0,
+          "effectivePrice": 13155
+        },
+        {
+          "color": "WHITE",
+          "colorCode": "WHITE",
+          "itemName": "AirPods 4 with Active Noise Cancellation",
+          "itemAlias": null,
+          "mrp": 17900,
+          "discount": 0.05,
+          "instantDiscount": 17005,
+          "cashBack": 1500,
+          "exchangeBonus": 0,
+          "exchangeValue": 0,
+          "effectivePrice": 15505
+        },
+        {
+          "color": "WHITE",
+          "colorCode": "WHITE",
+          "itemName": "AirPods 4",
+          "itemAlias": null,
+          "mrp": 12900,
+          "discount": 0.05,
+          "instantDiscount": 12255,
+          "cashBack": 1000,
+          "exchangeBonus": 0,
+          "exchangeValue": 0,
+          "effectivePrice": 11255
+        },
+        {
+          "color": "WHITE",
+          "colorCode": "WHITE",
+          "itemName": "AirPods (3rd generation) with Lightning Charging Case",
+          "itemAlias": null,
+          "mrp": 19900,
+          "discount": 0.05,
+          "instantDiscount": 18905,
+          "cashBack": 1000,
+          "exchangeBonus": 0,
+          "exchangeValue": 0,
+          "effectivePrice": 17905
+        }
+      ]
+    },
+    {
+      "model": "Airpods_Pro",
+      "productCode": null,
+      "variants": [
+        {
+          "color": "WHITE",
+          "colorCode": "WHITE",
+          "itemName": "AirPods Pro (2nd generation) with MagSafe Case (USBC)",
+          "itemAlias": null,
+          "mrp": 24900,
+          "discount": 0.05,
+          "instantDiscount": 23655,
+          "cashBack": 1000,
+          "exchangeBonus": 0,
+          "exchangeValue": 0,
+          "effectivePrice": 22655
+        }
+      ]
+    },
+    {
+      "model": "Airpods Pro",
+      "productCode": null,
+      "variants": [
+        {
+          "color": "WHITE",
+          "colorCode": "WHITE",
+          "itemName": "AirPods Pro 3",
+          "itemAlias": null,
+          "mrp": 25900,
+          "discount": 0.05,
+          "instantDiscount": 24605,
+          "cashBack": 2000,
+          "exchangeBonus": 0,
+          "exchangeValue": 0,
+          "effectivePrice": 22605
+        }
+      ]
+    }
+  ]
+}
