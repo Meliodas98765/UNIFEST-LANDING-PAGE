@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react';
-import { Smartphone, Tablet, Laptop, Watch, Headphones, ChevronRight, Check, User, Mail, Phone, MapPin, Loader2, ArrowLeft, Calendar } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Smartphone, Tablet, Laptop, Watch, Headphones, ChevronRight, Check, User, Mail, Phone, Loader2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { createLeadInCRM, getUTMParameters } from '@/lib/crm';
-import { watches, airpods } from '@/data';
+import { watches, airpods, iphones, ipads, macbooks } from '@/data';
 import { isWatchVariant, isAirPodsVariant } from '@/data/types';
 
 
@@ -23,10 +23,6 @@ interface UserDetails {
   lastName: string;
   email: string;
   phone: string;
-  address: string;
-  city: string;
-  pincode: string;
-  expectedVisitDate: string;
 }
 
 
@@ -88,7 +84,7 @@ const finishOptions: Record<string, string[]> = {
 const getWatchSizeOptions = (productName: string): string[] => {
   const product = watches.products.find(p => p.model === productName);
   if (!product) return [];
-  
+
   const sizes = new Set<string>();
   product.variants.forEach(variant => {
     if (isWatchVariant(variant)) {
@@ -102,7 +98,7 @@ const getWatchSizeOptions = (productName: string): string[] => {
 const getWatchColorOptions = (productName: string, size: string): string[] => {
   const product = watches.products.find(p => p.model === productName);
   if (!product) return [];
-  
+
   const colors = new Set<string>();
   product.variants.forEach(variant => {
     if (isWatchVariant(variant) && variant.size === size) {
@@ -116,7 +112,7 @@ const getWatchColorOptions = (productName: string, size: string): string[] => {
 const getAirPodsColorOptions = (productName: string): string[] => {
   const product = airpods.products.find(p => p.model === productName);
   if (!product) return [];
-  
+
   const colors = new Set<string>();
   product.variants.forEach(variant => {
     if (isAirPodsVariant(variant)) {
@@ -124,6 +120,140 @@ const getAirPodsColorOptions = (productName: string): string[] => {
     }
   });
   return Array.from(colors).sort();
+};
+
+// Helper function to get finish/color options for iPhone, iPad, MacBook products (after storage is selected)
+const getFinishOptions = (category: string, productName: string, storage: string): string[] => {
+  let productData;
+  if (category === 'iphone') {
+    productData = iphones.products.find(p => p.model === productName);
+  } else if (category === 'ipad') {
+    productData = ipads.products.find(p => p.model === productName);
+  } else if (category === 'macbook') {
+    productData = macbooks.products.find(p => p.model === productName);
+  }
+
+  if (!productData) return [];
+
+  const colors = new Set<string>();
+  const normalizedStorage = storage.replace(/(\d+)(GB|TB)/i, '$1 $2');
+  
+  productData.variants.forEach(variant => {
+    if ('storage' in variant) {
+      const variantStorage = variant.storage.replace(/\s+/g, ' ');
+      const storageMatch = variantStorage === normalizedStorage || 
+                          variantStorage === storage ||
+                          variantStorage.replace(/\s+/g, '') === storage.replace(/\s+/g, '');
+      
+      if (storageMatch) {
+        // Use the color field, which contains the actual color name
+        colors.add(variant.color);
+      }
+    }
+  });
+  
+  return Array.from(colors).sort();
+};
+
+// Color mapping function to convert color names to hex codes
+const getColorHex = (colorName: string): string => {
+  // Normalize color name for case-insensitive matching
+  const normalized = colorName.trim();
+  
+  const colorMap: Record<string, string> = {
+    'Black': '#000000',
+    'White': '#FFFFFF',
+    'Pink': '#FFB6C1',
+    'Teal': '#008080',
+    'Ultramarine': '#4166F5',
+    'Blue': '#007AFF',
+    'Green': '#34C759',
+    'Yellow': '#FFD60A',
+    'Space Black': '#1C1C1E',
+    'Natural Titanium': '#E5E4E2',
+    'Blue Titanium': '#5E9ED6',
+    'White Titanium': '#F5F5F7',
+    'Black Titanium': '#1C1C1E',
+    'Space Grey': '#8E8E93',
+    'Silver': '#C0C0C0',
+    'SILVER': '#C0C0C0',
+    'Starlight': '#F5F5F7',
+    'Midnight': '#1C1C1E',
+    'Sky Blue': '#87CEEB',
+    'Purple': '#AF52DE',
+    'Mist Blue': '#5E9ED6',
+    'Lavender': '#E6E6FA',
+    'Sage': '#87AE73',
+    'Cosmic Orange': '#FF6B35',
+    'Deep Blue': '#003366',
+    'DEEP BLUE': '#003366',
+    'Cloud White': '#F5F5F7',
+    'Light Gold': '#F5DCB4',
+  };
+  
+  // Try exact match first
+  if (colorMap[normalized]) {
+    return colorMap[normalized];
+  }
+  
+  // Try case-insensitive match
+  const lowerNormalized = normalized.toLowerCase();
+  for (const [key, value] of Object.entries(colorMap)) {
+    if (key.toLowerCase() === lowerNormalized) {
+      return value;
+    }
+  }
+  
+  return '#CCCCCC';
+};
+
+// Helper function to normalize color names for matching
+const normalizeColorName = (color: string): string => {
+  return color.toLowerCase().replace(/\s+/g, ' ').trim();
+};
+
+// Helper function to format color names for display (capitalize first letter of each word)
+const formatColorName = (color: string): string => {
+  return color
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+// Helper function to get product variant and price
+const getProductVariant = (category: string, product: string, storage: string, finish: string) => {
+  let productData;
+  if (category === 'iphone') {
+    productData = iphones.products.find(p => p.model === product);
+  } else if (category === 'ipad') {
+    productData = ipads.products.find(p => p.model === product);
+  } else if (category === 'macbook') {
+    productData = macbooks.products.find(p => p.model === product);
+  }
+
+  if (!productData) return null;
+
+  // Normalize storage format (e.g., "256GB" -> "256 GB")
+  const normalizedStorage = storage.replace(/(\d+)(GB|TB)/i, '$1 $2');
+  const normalizedFinish = normalizeColorName(finish);
+
+  // Find variant matching storage and finish
+  const variant = productData.variants.find(v => {
+    // Check if variant has storage property (not WatchVariant or AirPodsVariant)
+    if (!('storage' in v)) return false;
+
+    const storageMatch = v.storage === normalizedStorage || v.storage === storage ||
+      v.storage.replace(/\s+/g, '') === storage.replace(/\s+/g, '');
+
+    const colorMatch = normalizeColorName(v.color) === normalizedFinish ||
+      normalizeColorName(v.colorCode.replace(/_/g, ' ')) === normalizedFinish ||
+      normalizeColorName(v.color.replace(/\s+/g, ' ')) === normalizedFinish;
+
+    return storageMatch && colorMatch;
+  });
+
+  return variant || null;
 };
 
 
@@ -142,15 +272,12 @@ export function PrebookingForm() {
     lastName: '',
     email: '',
     phone: '',
-    address: '',
-    city: '',
-    pincode: '',
-    expectedVisitDate: '',
   });
-  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const navigate = useNavigate();
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpTimer, setOtpTimer] = useState(0);
   const [leadCreationStatus, setLeadCreationStatus] = useState<'idle' | 'creating' | 'success' | 'failed'>('idle');
   const [leadCreationError, setLeadCreationError] = useState<string>('');
-  const [leadId, setLeadId] = useState<string>('');
 
 
   const handleCategorySelect = (categoryId: string) => {
@@ -212,6 +339,30 @@ export function PrebookingForm() {
     });
   };
 
+  // Handle OTP generation
+  const handleGenerateOTP = async () => {
+    if (!userDetails.phone || userDetails.phone.length !== 10) {
+      alert('Please enter a valid 10-digit phone number');
+      return;
+    }
+
+    // TODO: Implement actual OTP generation API call here
+    // For now, just simulate OTP generation
+    setOtpSent(true);
+    setOtpTimer(60); // 60 seconds countdown
+
+    // Start countdown timer
+    const timer = setInterval(() => {
+      setOtpTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
   // Determine if category needs storage, size, or neither
   const needsStorage = useMemo(() => {
     return productData.category === 'iphone' || productData.category === 'ipad' || productData.category === 'macbook';
@@ -224,7 +375,7 @@ export function PrebookingForm() {
   // Validation for continue button
   const canContinueProduct = useMemo(() => {
     if (!productData.category || !productData.product) return false;
-    
+
     if (productData.category === 'watch') {
       return productData.size && productData.color;
     } else if (productData.category === 'airpods') {
@@ -271,7 +422,6 @@ export function PrebookingForm() {
         mobile: userDetails.phone,
         email: userDetails.email,
         itemName: itemName,
-        expectedVisitDate: userDetails.expectedVisitDate || undefined,
         leadSource: 'TeleCHAMP',
         campaignName: 'LANDING PAGE PAY',
         leadCampaignName: 'LANDING PAGE PAY',
@@ -280,10 +430,24 @@ export function PrebookingForm() {
       });
 
       if (result.success) {
-        setLeadCreationStatus('success');
-        setLeadId(result.leadId || '');
-        // Show success dialog
-        setShowStatusDialog(true);
+        // Format product name for display
+        let productDisplayName = '';
+        if (productData.category === 'watch') {
+          productDisplayName = `${productData.product} ${productData.size} - ${productData.color}`;
+        } else if (productData.category === 'airpods') {
+          productDisplayName = `${productData.product} - ${productData.color}`;
+        } else {
+          productDisplayName = `${productData.product} ${productData.storage} - ${productData.finish}`;
+        }
+
+        // Navigate to thank you page with data via location state
+        navigate('/thankyou', {
+          state: {
+            productName: productDisplayName,
+            email: userDetails.email,
+            phone: userDetails.phone,
+          },
+        });
       } else {
         setLeadCreationStatus('failed');
         setLeadCreationError(result.message || 'Failed to create lead. Please try again.');
@@ -294,33 +458,6 @@ export function PrebookingForm() {
     }
   };
 
-
-  // Reset form
-  const resetForm = () => {
-    setStep(1);
-    setProductData({
-      category: '',
-      product: '',
-      storage: '',
-      size: '',
-      finish: '',
-      color: '',
-    });
-    setUserDetails({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      address: '',
-      city: '',
-      pincode: '',
-      expectedVisitDate: '',
-    });
-    setShowStatusDialog(false);
-    setLeadCreationStatus('idle');
-    setLeadCreationError('');
-    setLeadId('');
-  };
 
   // Render Step Indicator
   const renderStepIndicator = () => (
@@ -360,37 +497,37 @@ export function PrebookingForm() {
       </div>
 
       {/* Category Selection */}
-      <div className="mb-6">
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+      <div className="mb-4">
+        <label className="block text-xs font-bold text-slate-900 tracking-wide mb-2">
           Category
         </label>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
           {categories.map((category) => (
             <button
               key={category.id}
               onClick={() => handleCategorySelect(category.id)}
-              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-all duration-200 ${productData.category === category.id
+              className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border transition-all duration-200 ${productData.category === category.id
                 ? 'border-brand-green bg-brand-green text-white shadow-sm'
                 : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                 }`}
             >
-              <category.icon className="w-4 h-4" />
-              <span className="text-sm font-medium">{category.label}</span>
+              <category.icon className="w-3.5 h-3.5" />
+              <span className="text-xs font-medium">{category.label}</span>
             </button>
           ))}
         </div>
       </div>
 
       {/* Product Selection */}
-      <div className="mb-6">
-        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+      <div className="mb-4">
+        <label className="block text-xs font-bold text-slate-900 tracking-wide mb-2">
           Product
         </label>
         <select
           value={productData.product}
           onChange={(e) => handleProductSelect(e.target.value)}
           disabled={!productData.category}
-          className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
+          className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-green focus:border-transparent disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
         >
           <option value="">Select Product</option>
           {productData.category && products[productData.category]?.map((product) => (
@@ -401,27 +538,27 @@ export function PrebookingForm() {
 
       {/* Storage Selection (for iPhone, iPad, MacBook) */}
       {needsStorage && (
-        <div className="mb-6">
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+        <div className="mb-4">
+          <label className="block text-xs font-bold text-slate-900 tracking-wide mb-2">
             Storage
           </label>
           {productData.product ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {storageOptions[productData.product]?.map((storage) => (
                 <button
                   key={storage}
                   onClick={() => handleStorageSelect(storage)}
-                  className={`px-4 py-3 rounded-lg border transition-all duration-200 ${productData.storage === storage
+                  className={`px-3 py-2 rounded-lg border transition-all duration-200 ${productData.storage === storage
                     ? 'border-brand-green bg-brand-green text-white shadow-sm'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                 >
-                  <span className="text-sm font-medium">{storage}</span>
+                  <span className="text-xs font-medium">{storage}</span>
                 </button>
               ))}
             </div>
           ) : (
-            <div className="px-4 py-3 rounded-lg border border-slate-100 bg-slate-50 text-slate-400 text-sm">
+            <div className="px-3 py-2 rounded-lg border border-slate-100 bg-slate-50 text-slate-400 text-xs">
               Select a product first
             </div>
           )}
@@ -430,27 +567,27 @@ export function PrebookingForm() {
 
       {/* Size Selection (for Watch) */}
       {needsSize && (
-        <div className="mb-6">
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+        <div className="mb-4">
+          <label className="block text-xs font-bold text-slate-900 tracking-wide mb-2">
             Size
           </label>
           {productData.product ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {getWatchSizeOptions(productData.product).map((size) => (
                 <button
                   key={size}
                   onClick={() => handleSizeSelect(size)}
-                  className={`px-4 py-3 rounded-lg border transition-all duration-200 ${productData.size === size
+                  className={`px-3 py-2 rounded-lg border transition-all duration-200 ${productData.size === size
                     ? 'border-brand-green bg-brand-green text-white shadow-sm'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                 >
-                  <span className="text-sm font-medium">{size}</span>
+                  <span className="text-xs font-medium">{size}</span>
                 </button>
               ))}
             </div>
           ) : (
-            <div className="px-4 py-3 rounded-lg border border-slate-100 bg-slate-50 text-slate-400 text-sm">
+            <div className="px-3 py-2 rounded-lg border border-slate-100 bg-slate-50 text-slate-400 text-xs">
               Select a product first
             </div>
           )}
@@ -459,27 +596,77 @@ export function PrebookingForm() {
 
       {/* Finish Selection (for iPhone, iPad, MacBook) */}
       {needsStorage && (
-        <div className="mb-8">
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+        <div className="mb-4">
+          <label className="block text-xs font-bold text-slate-900 tracking-wide mb-2">
             Preferred Finish
           </label>
           {productData.storage ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {finishOptions[productData.product]?.map((finish) => (
-                <button
-                  key={finish}
-                  onClick={() => handleFinishSelect(finish)}
-                  className={`px-4 py-3 rounded-lg border transition-all duration-200 ${productData.finish === finish
-                    ? 'border-brand-green bg-brand-green text-white shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
-                    }`}
-                >
-                  <span className="text-sm font-medium">{finish}</span>
-                </button>
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
+                {getFinishOptions(productData.category, productData.product, productData.storage).map((finish) => (
+                  <button
+                    key={finish}
+                    onClick={() => handleFinishSelect(finish)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 ${productData.finish === finish
+                      ? 'border-blue-500 bg-blue-50 text-blue-600'
+                      : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                  >
+                    <div
+                      className="w-5 h-5 rounded-full border border-slate-300 flex-shrink-0"
+                      style={{ backgroundColor: getColorHex(finish) }}
+                    />
+                    <span className="text-xs font-medium">{formatColorName(finish)}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Product Summary with Price */}
+              {productData.finish && (() => {
+                const variant = getProductVariant(productData.category, productData.product, productData.storage, productData.finish);
+                if (!variant) return null;
+
+                return (
+                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-slate-900 mb-1">
+                          {productData.product} {productData.storage}
+                        </p>
+                        <p className="text-xs text-slate-600 mb-2">{formatColorName(productData.finish)}</p>
+                        {variant.discount > 0 && (
+                          <p className="text-xs text-green-600 font-medium">
+                            Up to {Math.round(variant.discount)}% off
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        {variant.effectivePrice ? (
+                          <>
+                            <p className="text-xs text-slate-400 line-through mb-1">
+                              ₹{variant.mrp.toLocaleString('en-IN')}*
+                            </p>
+                            <p className="text-lg font-bold text-brand-green">
+                              ₹{variant.effectivePrice.toLocaleString('en-IN')}*
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-lg font-bold text-brand-green">
+                            ₹{variant.mrp.toLocaleString('en-IN')}*
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <hr className="border-slate-200 my-3" />
+                    <p className="text-xs text-slate-400 italic">
+                      *Includes discounts, cashback, tentative exchange value, and exchange bonus.
+                    </p>
+                  </div>
+                );
+              })()}
+            </>
           ) : (
-            <div className="px-4 py-3 rounded-lg border border-slate-100 bg-slate-50 text-slate-400 text-sm">
+            <div className="px-3 py-2 rounded-lg border border-slate-100 bg-slate-50 text-slate-400 text-xs">
               Select storage first
             </div>
           )}
@@ -488,27 +675,27 @@ export function PrebookingForm() {
 
       {/* Colour Selection (for Watch) */}
       {needsSize && (
-        <div className="mb-8">
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+        <div className="mb-4">
+          <label className="block text-xs font-bold text-slate-900 tracking-wide mb-2">
             Colour
           </label>
           {productData.size ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {getWatchColorOptions(productData.product, productData.size).map((color) => (
                 <button
                   key={color}
                   onClick={() => handleColorSelect(color)}
-                  className={`px-4 py-3 rounded-lg border transition-all duration-200 ${productData.color === color
+                  className={`px-3 py-2 rounded-lg border transition-all duration-200 ${productData.color === color
                     ? 'border-brand-green bg-brand-green text-white shadow-sm'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                 >
-                  <span className="text-sm font-medium">{color}</span>
+                  <span className="text-xs font-medium">{color}</span>
                 </button>
               ))}
             </div>
           ) : (
-            <div className="px-4 py-3 rounded-lg border border-slate-100 bg-slate-50 text-slate-400 text-sm">
+            <div className="px-3 py-2 rounded-lg border border-slate-100 bg-slate-50 text-slate-400 text-xs">
               Select size first
             </div>
           )}
@@ -517,27 +704,27 @@ export function PrebookingForm() {
 
       {/* Colour Selection (for AirPods) */}
       {productData.category === 'airpods' && (
-        <div className="mb-8">
-          <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+        <div className="mb-4">
+          <label className="block text-xs font-bold text-slate-900 tracking-wide mb-2">
             Colour
           </label>
           {productData.product ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {getAirPodsColorOptions(productData.product).map((color) => (
                 <button
                   key={color}
                   onClick={() => handleColorSelect(color)}
-                  className={`px-4 py-3 rounded-lg border transition-all duration-200 ${productData.color === color
+                  className={`px-3 py-2 rounded-lg border transition-all duration-200 ${productData.color === color
                     ? 'border-brand-green bg-brand-green text-white shadow-sm'
                     : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                 >
-                  <span className="text-sm font-medium">{color}</span>
+                  <span className="text-xs font-medium">{color}</span>
                 </button>
               ))}
             </div>
           ) : (
-            <div className="px-4 py-3 rounded-lg border border-slate-100 bg-slate-50 text-slate-400 text-sm">
+            <div className="px-3 py-2 rounded-lg border border-slate-100 bg-slate-50 text-slate-400 text-xs">
               Select a product first
             </div>
           )}
@@ -572,34 +759,34 @@ export function PrebookingForm() {
       <div className="bg-slate-50 rounded-xl p-4 mb-6">
         <p className="text-xs text-slate-400 uppercase tracking-wider mb-2">Selected Product</p>
         <p className="font-medium text-slate-900">
-          {productData.category === 'watch' 
+          {productData.category === 'watch'
             ? `${productData.product} ${productData.size} - ${productData.color}`
             : productData.category === 'airpods'
-            ? `${productData.product} - ${productData.color}`
-            : `${productData.product} ${productData.storage} - ${productData.finish}`
+              ? `${productData.product} - ${productData.color}`
+              : `${productData.product} ${productData.storage} - ${productData.finish}`
           }
         </p>
       </div>
 
       {/* Name Fields */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-2 gap-3 mb-3">
         <div>
-          <Label htmlFor="firstName" className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
+          <Label htmlFor="firstName" className="text-xs font-bold text-slate-900 tracking-wide mb-1.5 block">
             First Name *
           </Label>
           <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
               id="firstName"
               value={userDetails.firstName}
               onChange={(e) => handleUserDetailsChange('firstName', e.target.value)}
               placeholder="John"
-              className="pl-10 py-3 rounded-lg border-slate-200 focus:ring-2 focus:ring-brand-green"
+              className="pl-9 py-2 text-sm rounded-lg border-slate-200 focus:ring-2 focus:ring-brand-green"
             />
           </div>
         </div>
         <div>
-          <Label htmlFor="lastName" className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
+          <Label htmlFor="lastName" className="text-xs font-bold text-slate-900 tracking-wide mb-1.5 block">
             Last Name *
           </Label>
           <Input
@@ -607,107 +794,54 @@ export function PrebookingForm() {
             value={userDetails.lastName}
             onChange={(e) => handleUserDetailsChange('lastName', e.target.value)}
             placeholder="Doe"
-            className="py-3 rounded-lg border-slate-200 focus:ring-2 focus:ring-brand-green"
+            className="py-2 text-sm rounded-lg border-slate-200 focus:ring-2 focus:ring-brand-green"
           />
         </div>
       </div>
 
       {/* Email */}
-      <div className="mb-4">
-        <Label htmlFor="email" className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
+      <div className="mb-3">
+        <Label htmlFor="email" className="text-xs font-bold text-slate-900 tracking-wide mb-1.5 block">
           Email Address *
         </Label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <Input
             id="email"
             type="email"
             value={userDetails.email}
             onChange={(e) => handleUserDetailsChange('email', e.target.value)}
             placeholder="john.doe@example.com"
-            className="pl-10 py-3 rounded-xl border-slate-200 focus:ring-2 focus:ring-brand-dark"
+            className="pl-9 py-2 text-sm rounded-lg border-slate-200 focus:ring-2 focus:ring-brand-green"
           />
         </div>
       </div>
 
       {/* Phone */}
-      <div className="mb-4">
-        <Label htmlFor="phone" className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
+      <div className="mb-6">
+        <Label htmlFor="phone" className="text-xs font-bold text-slate-900 tracking-wide mb-1.5 block">
           Phone Number *
         </Label>
-        <div className="relative">
-          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <Input
-            id="phone"
-            type="tel"
-            value={userDetails.phone}
-            onChange={(e) => handleUserDetailsChange('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
-            placeholder="9876543210"
-            className="pl-10 py-3 rounded-xl border-slate-200 focus:ring-2 focus:ring-brand-dark"
-          />
-        </div>
-      </div>
-
-      {/* Address */}
-      <div className="mb-4">
-        <Label htmlFor="address" className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
-          Address
-        </Label>
-        <div className="relative">
-          <MapPin className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-          <Input
-            id="address"
-            value={userDetails.address}
-            onChange={(e) => handleUserDetailsChange('address', e.target.value)}
-            placeholder="Your address"
-            className="pl-10 py-3 rounded-xl border-slate-200 focus:ring-2 focus:ring-brand-dark"
-          />
-        </div>
-      </div>
-
-      {/* City & Pincode */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <Label htmlFor="city" className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
-            City
-          </Label>
-          <Input
-            id="city"
-            value={userDetails.city}
-            onChange={(e) => handleUserDetailsChange('city', e.target.value)}
-            placeholder="Gurugram"
-            className="py-3 rounded-lg border-slate-200 focus:ring-2 focus:ring-brand-green"
-          />
-        </div>
-        <div>
-          <Label htmlFor="pincode" className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
-            Pincode
-          </Label>
-          <Input
-            id="pincode"
-            value={userDetails.pincode}
-            onChange={(e) => handleUserDetailsChange('pincode', e.target.value.replace(/\D/g, '').slice(0, 6))}
-            placeholder="122009"
-            className="py-3 rounded-lg border-slate-200 focus:ring-2 focus:ring-brand-green"
-          />
-        </div>
-      </div>
-
-      {/* Expected Visit Date */}
-      <div className="mb-8">
-        <Label htmlFor="expectedVisitDate" className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
-          Expected Visit Date
-        </Label>
-        <div className="relative">
-          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <Input
-            id="expectedVisitDate"
-            type="date"
-            value={userDetails.expectedVisitDate}
-            onChange={(e) => handleUserDetailsChange('expectedVisitDate', e.target.value)}
-            min={new Date().toISOString().split('T')[0]}
-            className="pl-10 py-3 rounded-xl border-slate-200 focus:ring-2 focus:ring-brand-dark"
-          />
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input
+              id="phone"
+              type="tel"
+              value={userDetails.phone}
+              onChange={(e) => handleUserDetailsChange('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
+              placeholder="9876543210"
+              className="pl-9 py-2 text-sm rounded-lg border-slate-200 focus:ring-2 focus:ring-brand-green"
+            />
+          </div>
+          <Button
+            type="button"
+            onClick={handleGenerateOTP}
+            disabled={!userDetails.phone || userDetails.phone.length !== 10 || otpTimer > 0}
+            className="px-4 py-2 text-sm bg-brand-green hover:bg-[#5fa038] text-white rounded-lg font-medium disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed whitespace-nowrap"
+          >
+            {otpTimer > 0 ? `Resend (${otpTimer}s)` : otpSent ? 'Resend OTP' : 'Generate OTP'}
+          </Button>
         </div>
       </div>
 
@@ -736,25 +870,25 @@ export function PrebookingForm() {
           variant="outline"
           onClick={() => setStep(1)}
           disabled={leadCreationStatus === 'creating'}
-          className="flex-1 py-4 rounded-lg text-base font-medium border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+          className="flex-1 py-2.5 rounded-lg text-sm font-medium border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
         >
-          <ArrowLeft className="w-5 h-5 mr-2" />
+          <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
         <Button
           disabled={!canContinueDetails || leadCreationStatus === 'creating'}
           onClick={handleContinueToPayment}
-          className="flex-1 bg-brand-green hover:bg-[#5fa038] text-white py-4 rounded-lg text-base font-semibold disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-all duration-300"
+          className="flex-1 bg-brand-green hover:bg-[#5fa038] text-white py-2.5 rounded-lg text-sm font-semibold disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-all duration-300"
         >
           {leadCreationStatus === 'creating' ? (
             <>
-              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Creating Lead...
             </>
           ) : (
             <>
               Submit
-              <ChevronRight className="w-5 h-5 ml-2" />
+              <ChevronRight className="w-4 h-4 ml-2" />
             </>
           )}
         </Button>
@@ -762,63 +896,10 @@ export function PrebookingForm() {
     </div>
   );
 
-  // Render Success Dialog
-  const renderStatusDialog = () => (
-    <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-center">
-            {leadCreationStatus === 'success' ? (
-              <div className="flex flex-col items-center">
-                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                  <Check className="w-8 h-8 text-green-600" />
-                </div>
-                <span className="text-2xl font-semibold text-green-600">Lead Created Successfully!</span>
-              </div>
-            ) : null}
-          </DialogTitle>
-        </DialogHeader>
-        {leadCreationStatus === 'success' ? (
-          <div className="space-y-4 pt-4">
-            <DialogDescription className="text-center text-slate-600">
-              Thank you for your interest! We've received your pre-booking request and will contact you soon.
-            </DialogDescription>
-            {leadId && (
-              <div className="bg-slate-50 rounded-lg p-4 text-left">
-                <p className="text-sm text-slate-500 mb-1">Lead ID</p>
-                <p className="font-medium text-brand-green mb-3">{leadId}</p>
-              </div>
-            )}
-            <div className="bg-slate-50 rounded-lg p-4 text-left">
-              <p className="text-sm text-slate-500 mb-2">Selected Product</p>
-              <p className="font-medium text-brand-green">
-                {productData.category === 'watch' 
-                  ? `${productData.product} ${productData.size} - ${productData.color}`
-                  : productData.category === 'airpods'
-                  ? `${productData.product} - ${productData.color}`
-                  : `${productData.product} ${productData.storage} - ${productData.finish}`
-                }
-              </p>
-            </div>
-            <p className="text-sm text-slate-500 text-center">
-              Our team will reach out to you at <strong>{userDetails.email}</strong> or <strong>+91 {userDetails.phone}</strong> to complete your booking.
-            </p>
-            <Button
-              onClick={resetForm}
-              className="w-full bg-brand-green hover:bg-[#5fa038] text-white py-3 rounded-xl"
-            >
-              Pre-book Another Product
-            </Button>
-          </div>
-        ) : null}
-      </DialogContent>
-    </Dialog>
-  );
-
   return (
-    <section id="prebooking-form" className="w-full bg-slate-50 py-12 md:py-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+    <section id="prebooking-form" className="w-full bg-slate-50 pt-6 pb-12 md:pt-8 md:py-20">
+      <div className="max-w-6xl mx-auto px-8 sm:px-12 lg:px-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 items-center">
           {/* Left Side: Form */}
           <div className="w-full order-last lg:order-first">
             <div className="bg-white rounded-2xl shadow-lg border-2 border-slate-200 overflow-hidden">
@@ -833,20 +914,17 @@ export function PrebookingForm() {
           </div>
 
           {/* Right Side: Image */}
-          <div className="w-full order-first lg:order-last">
-            <div className="relative w-full h-full min-h-[250px] lg:min-h-[400px] flex items-center justify-center">
+          <div className="hidden lg:block w-full order-first lg:order-last">
+            <div className="relative w-full h-full min-h-[300px] lg:min-h-[450px] flex items-center justify-center">
               <img
                 src="/right_form_image.webp"
                 alt="UniFest Apple Products"
-                className="w-full max-w-xs lg:max-w-sm h-auto object-contain rounded-2xl"
+                className="w-full max-w-[280px] lg:max-w-[340px] h-auto object-contain rounded-2xl"
               />
             </div>
           </div>
         </div>
       </div>
-
-      {/* Success Dialog */}
-      {renderStatusDialog()}
     </section>
   );
 }

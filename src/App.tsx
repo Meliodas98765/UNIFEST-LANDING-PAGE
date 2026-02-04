@@ -1,17 +1,16 @@
 import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Header } from '@/sections/Header';
 import { PromotionalBanner } from '@/sections/PromotionalBanner';
 import { Hero } from '@/sections/Hero';
 import { TrustBadges } from '@/sections/TrustBadges';
 import { PrebookingForm } from '@/sections/PrebookingForm';
 import { Gallery } from '@/sections/Gallery';
-import { HowItWorks } from '@/sections/HowItWorks';
-import { FAQ } from '@/sections/FAQ';
-import { CTA } from '@/sections/CTA';
 import { Footer } from '@/sections/Footer';
+import { ThankYou } from '@/pages/ThankYou';
 import { useStoreConfig } from '@/hooks/use-store-config';
 
-function App() {
+function HomePage() {
   const storeConfig = useStoreConfig();
 
   useEffect(() => {
@@ -26,11 +25,19 @@ function App() {
       <Hero />
       <PrebookingForm />
       <Gallery />
-      <HowItWorks />
-      <FAQ />
-      <CTA />
       <Footer />
     </main>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/thankyou" element={<ThankYou />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

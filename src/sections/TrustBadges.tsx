@@ -1,21 +1,21 @@
-import { Wallet, Shield, FileText, Store } from 'lucide-react';
+import { CheckCircle, Headphones, FileText, Store } from 'lucide-react';
 
 const badges = [
   {
-    icon: Wallet,
-    text: '₹499 Fully Redeemable',
+    icon: Store,
+    text: '95+ Stores',
   },
   {
-    icon: Shield,
-    text: 'Secure Payment Gateway',
+    icon: CheckCircle,
+    text: 'Easy Pre-Booking',
+  },
+  {
+    icon: Headphones,
+    text: 'Expert Support',
   },
   {
     icon: FileText,
-    text: 'GST Invoice Sent on Email',
-  },
-  {
-    icon: Store,
-    text: 'Official Apple Partner Store',
+    text: 'Largest Apple Premium Partner',
   },
 ];
 
@@ -29,8 +29,8 @@ export function TrustBadges() {
         {/* Scrolling container */}
         <div className="flex animate-scroll">
           {duplicatedBadges.map((badge, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className="flex items-center gap-2.5 flex-shrink-0 px-8 md:px-12"
             >
               <div className="flex-shrink-0 w-6 h-6 rounded-full border border-white/30 flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}>
@@ -43,7 +43,7 @@ export function TrustBadges() {
           ))}
         </div>
       </div>
-      
+
       <style>{`
         @keyframes scroll {
           0% {

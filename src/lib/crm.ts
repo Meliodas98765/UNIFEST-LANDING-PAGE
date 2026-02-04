@@ -25,6 +25,7 @@ interface CreateLeadParams {
 
 /**
  * Extract UTM parameters from URL
+ * Only returns parameters that are present and non-empty
  */
 export function getUTMParameters(): {
     utm?: string;
@@ -39,15 +40,40 @@ export function getUTMParameters(): {
     }
 
     const urlParams = new URLSearchParams(window.location.search);
+    const params: {
+        utm?: string;
+        utmCampaign?: string;
+        utmTerm?: string;
+        utmContent?: string;
+        utmMedium?: string;
+        utmSource?: string;
+    } = {};
     
-    return {
-        utm: urlParams.get('utm') || undefined,
-        utmCampaign: urlParams.get('utm_campaign') || urlParams.get('utmCampaign') || undefined,
-        utmTerm: urlParams.get('utm_term') || urlParams.get('utmTerm') || undefined,
-        utmContent: urlParams.get('utm_content') || urlParams.get('utmContent') || undefined,
-        utmMedium: urlParams.get('utm_medium') || urlParams.get('utmMedium') || undefined,
-        utmSource: urlParams.get('utm_source') || urlParams.get('utmSource') || undefined,
+    // Helper function to get parameter value only if present and non-empty
+    const getParam = (key: string, altKey?: string): string | undefined => {
+        const value = urlParams.get(key) || (altKey ? urlParams.get(altKey) : null);
+        return value && value.trim() !== '' ? value : undefined;
     };
+    
+    const utm = getParam('utm');
+    if (utm) params.utm = utm;
+    
+    const utmCampaign = getParam('utm_campaign', 'utmCampaign');
+    if (utmCampaign) params.utmCampaign = utmCampaign;
+    
+    const utmTerm = getParam('utm_term', 'utmTerm');
+    if (utmTerm) params.utmTerm = utmTerm;
+    
+    const utmContent = getParam('utm_content', 'utmContent');
+    if (utmContent) params.utmContent = utmContent;
+    
+    const utmMedium = getParam('utm_medium', 'utmMedium');
+    if (utmMedium) params.utmMedium = utmMedium;
+    
+    const utmSource = getParam('utm_source', 'utmSource');
+    if (utmSource) params.utmSource = utmSource;
+    
+    return params;
 }
 
 /**
