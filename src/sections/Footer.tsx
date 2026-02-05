@@ -18,7 +18,7 @@ export function Footer() {
     <footer className="w-full bg-gray-100 py-8 md:py-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-2 md:mb-4">
           <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">
             How Unifest Works
           </h2>
@@ -28,20 +28,20 @@ export function Footer() {
         </div>
 
         {/* Steps */}
-        <div className="grid md:grid-cols-3 gap-6 max-w-lg mx-auto">
+        <div className="grid grid-cols-3 gap-1 md:gap-3 max-w-lg mx-auto">
           {steps.map((step, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-sm p-2 text-center aspect-square flex flex-col items-center justify-center">
+            <div key={index} className="bg-white rounded-lg shadow-sm p-1.5 md:p-3 text-center aspect-square flex flex-col items-center justify-center">
               {/* Icon */}
-              <div className="flex justify-center mb-2">
+              <div className="flex justify-center mb-1 md:mb-2">
                 <img
                   src={step.icon}
                   alt={step.title}
-                  className="w-12 h-12 object-contain"
+                  className="w-8 h-8 md:w-16 md:h-16 object-contain"
                 />
               </div>
 
               {/* Title */}
-              <h3 className="text-xs font-semibold text-slate-900 leading-tight">
+              <h3 className="text-[10px] md:text-xs font-semibold text-slate-900 leading-tight">
                 {index === 0 && (
                   <>
                     Share Your<br />Requirement
